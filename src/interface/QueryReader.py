@@ -23,13 +23,14 @@ class QueryReader(object):
             ar = line.split('\t')
             if(ar[0].isdigit()):
                 q = Query()
-                q.set_id(int(ar[0]))
+                query_id = int(ar[0])
+                q.set_id(query_id)
                 ar1 = ar[1].split(' ')
                 [WORD, FREQ]= range(2)
                 state = WORD
                 for l in ar1: 
                     if(state == WORD):
-                        word = Word(l)
+                        word = Word(l, query_id)
                     else: # state = FREQ
                         count = int(l)
                         q.words[word] = count 

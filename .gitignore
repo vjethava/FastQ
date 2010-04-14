@@ -1,1 +1,7 @@
 lib/*.so 
+*.pyc
+*/*.pyc
+zLatest/*.o
+zLatest/main
+zLatest/nbproject
+zLatest/obj 

@@ -91,20 +91,14 @@ class ArffReader(object):
         return len(self.instances)
 
     def getAttributes(self):
-        attrs = ""
-        for attribute in self.attributes:
-            attrs = attrs + attribute.__str__() + "\n" 
-        return attrs 
+        return self.attributes
     
     def getInstances(self):
-        res = ""
-        for instance in self.instances:
-            res = res + str(instance) + "\n" 
-        return res
+        return self.instances 
     
 if __name__=="__main__": 
     reader = ArffReader("/home/vjethava/CODE/webintent/QueryLabels.arff")
     print reader.getAttributes()
-#     print reader.getInstances()
+#   print reader.getInstances()
     
     

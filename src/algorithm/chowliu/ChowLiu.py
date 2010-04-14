@@ -34,10 +34,16 @@ class ChowLiu(object):
     def getMI(self, attrs1=None, instances1=None):
         if(attrs1 == None):
             attrs1 = self.atttributes
+        else:
+            self.attributes = attrs1
         if(instances1 == None):
             instances1 = self.instances
-        mutual_info = MutualInformation(attrs1, instances1).compute()
-        return mutual_info 
+        else:
+            self.instances = instances1 
+        self.mi_solver = MutualInformation(attrs1, instances1)
+        self.mutual_info = self.mi_solver.compute()
+        self.nE = len(attrs1)  - 1
+        return self.mutual_info 
 
     def readFile(self, arff_file):
         reader =  ArffReader(arff_file)
@@ -65,6 +71,13 @@ class ChowLiu(object):
             self.computeEdges()
         return self.edges
     
+    def get_prob_for_edge(self, edge_idx):
+        ''' returns the probability distribution corresponding the edge index '''
+        assert( (edge_idx < self.nE) and (edge_idx >= 0 )) 
+        edge = self.edges[edge_idx]
+        ex = int(edge[0])
+        ey = int(edge[1])
+        return self.mi_solver.counts[ex][ey].get()
         
     def getGraph(self):
         '''

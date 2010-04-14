@@ -10,6 +10,7 @@ class Attribute(object):
     classdocs
     '''
     count = 0
+    
     def __init__(self, line=None):
         '''
         Constructor
@@ -19,7 +20,12 @@ class Attribute(object):
         self.values = dict()
         self.__class__.count += 1
         self.numVals = 0
-        
+        self.id = self.__class__.count
+
+    
+    def get_id(self):
+        return self.id
+    
     def __hash__(self):
         return self.name 
     

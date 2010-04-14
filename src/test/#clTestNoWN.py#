@@ -4,7 +4,7 @@ Created on 17-Mar-2010
 @author: vjethava
 '''
 from interface import ArffReader
-
+import algorithm
 class TestCL(object):
     '''
     This is the main class for testing of C-L accuracy and recall 

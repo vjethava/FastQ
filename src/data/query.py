@@ -27,7 +27,7 @@ class Query(object):
     def __str__(self):
         result = "" + str(self.id) + " ["
         for word, count in self.words.iteritems():
-            result = result + " " + word + " " + str(count)
+            result = result + " " + str(word) + " " + str(count)
         result = result + " ]" 
         return result 
         

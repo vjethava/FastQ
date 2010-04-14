@@ -15,11 +15,10 @@ class DaiHelper(object):
         if(cname == 'Attribute'):
             id = 1000 + variable.id 
         elif(cname == 'Word'):
-            id = 2000 + cname
-        else 
-            id = '
+            id = 20000 + variable.get_id()
+        else # this has to be completed
+            id = 30000
     
-    def update_factor_graph(self, prior,):
     def __init__(self):
         '''
         Constructor

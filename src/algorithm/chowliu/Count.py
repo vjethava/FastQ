@@ -25,7 +25,8 @@ class Count:
     def incr(self, x, y):
         assert((self.isValid(x, self.nx) and self.isValid(y, self.ny)))
         self.freq[x][y] = self.freq[x][y] + 1
-    
+	
+
     def normalize(self, row=None):
         if(row == None):
             msum = numpy.sum(self.freq)

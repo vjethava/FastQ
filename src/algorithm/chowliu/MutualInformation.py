@@ -28,8 +28,9 @@ class MutualInformation(object):
         self.counts = [] 
         for i in range(nAttrs): # initialising the counts 
             crow = []
-            singletonCount = Count(nx, 1)
             nx = (attributes[i]).getNumVals()
+            singletonCount = Count(nx, 1)
+          
             for j in range(nAttrs):
                 ny = attributes[j].numVals
                 currCount = Count(nx, ny)
@@ -55,6 +56,11 @@ class MutualInformation(object):
                     self.counts[j][i].incr(y-1, x-1)
         for i in range(nAttr):
             self.singletons[i].normalize()
+        for i in range(nAttr):
+            for j in range(i+1, nAttr):
+                self.counts[i][j].normalize()
+                self.counts[j][i].normalize()
+    
 
     def getEntropy(self, freq):
         nx = freq.shape[0]

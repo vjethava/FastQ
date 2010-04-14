@@ -24,9 +24,6 @@ class GraphGenerateTestCase(unittest.TestCase):
     def test_dai(self):
         clInstance = ChowLiu()
         
-        
-        
-    
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testGraphGenerate']
     unittest.main()

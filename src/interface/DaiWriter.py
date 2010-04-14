@@ -17,6 +17,7 @@ class DaiWriter():
         self.vars = []
         self.factors = []
         self.daiFactors = dai.VecFactor()
+
         
     def get_dataset(self):
         return self.dataset
@@ -25,6 +26,7 @@ class DaiWriter():
     
     def get_cl(self):
         return self.cl 
+
     def set_cl(self, cl):
         self.cl = cl 
     
@@ -35,5 +37,5 @@ class DaiWriter():
             anum = attribute.numVals
             cfacet  = dai.Var(aid, anum)
             self.vars.append(cfacet)
-     
-            
+
+    

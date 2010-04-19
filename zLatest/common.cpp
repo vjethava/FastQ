@@ -20,6 +20,9 @@ string  topic[23] = {"Adults-Sex", "Arts-Culture", "Finance",
 int attrsNumVals[9] = {3, 3, 2, 2, 2, 2, 2, 4, 23};
 string* attributes[9] = {specificity, task, objective,
     authosen, spatialsen, timesen, polywords, genre, topic};
+string attrNames[9] = {"specificity", "task", "objective", "authosen", "spatialsen"
+    , "timesen", "polywords", "genre", "topic" };
+
 
 vector<string> split(string ip, char delim) {
     vector<string> result;

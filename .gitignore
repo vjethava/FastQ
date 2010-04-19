@@ -5,3 +5,10 @@ zLatest/*.o
 zLatest/main
 zLatest/nbproject
 zLatest/obj 
+zLatest/sample*
+zLatest/TAGS
+zLatest/tric
+zLatest/tric/*
+zLatest/result
+zLatest/result/*
+

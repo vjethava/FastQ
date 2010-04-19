@@ -15,20 +15,17 @@
 
 #include "dataset.h"
 #include "engine.h"
+#include "wnconnector.h"
 #include <cstdio>
 #include <string>
 
 int main() {
- 
+  srand(time(NULL));
+  double p = 0.5;
   Engine engine;
-  engine.testSolver(); 
-//  engine.readArff("data/classifieds.txt");
-//  engine.readQueries("data/Matrix");
-//  engine.computeChowLiu();
-//  engine.makeFacetVars();
-//  engine.makeChowLiuFactors();
-//  engine.makeQueryFactors();
-
+//  engine.testSolver1(p);
+  WnConnector wnc(NULL);
+  wnc.queryWord("papa");
   return 0;
 }
 

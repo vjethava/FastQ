@@ -15,11 +15,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <iostream>
-#include <string>
-#include <vector>
-using namespace std;
-
+// STL 
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
@@ -33,6 +29,12 @@ using namespace std;
 #include <fstream>
 #include <cassert>
 #include <cstdio>
+// BOOST
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/io.hpp>
+// LIBDAI
+#include <dai/alldai.h>
 
 using namespace std;
 
@@ -43,6 +45,8 @@ using namespace std;
 #define FOREACH(it,c) for(typeof((c).begin()) it=(c).begin();it!=(c).end();++it)
 // print error messages or not
 
+#define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __PRETTY_FUNCTION__, s)
+//#define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __FUNCTION__, s)
 #ifdef DEBUG
 #define PRINTF printf
 #define FPRINTF fprintf
@@ -51,6 +55,7 @@ using namespace std;
 #define PRINTF //
 #define FPRINTF //
 #define ASSERT //
+
 #endif
 
 #ifdef VERBOSE
@@ -62,6 +67,11 @@ using namespace std;
 #define VFPRINTF //
 #define VASSERT //
 #endif
+
+
+#define Matrix boost::numeric::ublas::matrix
+#define Vector boost::numeric::ublas::vector
+
 
 // what are the int, float, string
 typedef double DOUBLE;
@@ -81,6 +91,22 @@ typedef vector<DOUBLE>::iterator VD_ITER;
 typedef vector<STRING>::iterator VS_ITER;
 typedef vector<INT>::iterator VI_ITER;
 
+
+template <class T>
+pair<vector<T>*, vector<T>* >  getRndSelection(vector<T>* v, double p=1.0) {
+    assert ((p > 0.0) && (p <= 1.0));
+    vector<T >* result = new vector< T >();
+    vector<T >* unselected  = new vector< T >();
+    for (typeof ((v)->begin()) iter = (v)->begin(); iter != (v)->end(); ++iter) {
+        double u = ((double) rand())/( (double) RAND_MAX);
+        if(u <= p) {
+            result->push_back(*iter);
+        } else {
+            unselected->push_back(*iter);
+        }
+    }
+    return make_pair<vector< T >* , vector< T >* >(result, unselected);
+}
 
 
 template<typename T> string getStr(vector<T> v) {
@@ -193,6 +219,7 @@ extern int attrsNumVals[]; // = {3, 3, 2, 2, 2, 2, 2, 4, 23};
 extern string* attributes[];
 //= {specificity, task, objective, authosen, 
 //   spatialsen, timesen, polywords, genre, topic};
+extern string attrNames[];
 
 void tokenize(const string& str, vector<string>& tokens,
         const string& delimiters = " ");

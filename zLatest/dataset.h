@@ -23,12 +23,10 @@
 #include<dai/factor.h>
 #include <dai/factorgraph.h>
 #include <vector>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
+
 using namespace std;
 using namespace dai;
 
-#define matrix boost::numeric::ublas::matrix
 class Engine;
 
 class MyVar {
@@ -77,7 +75,6 @@ public:
     int id;
     Engine* engine;
     int count; 
-
 public:
     Query(int _id, vector<string> _words, vector<int> _freq, Engine* engine = NULL) {
         this->words = new map<string, int>();
@@ -116,7 +113,7 @@ public:
 enum CLFactorType {MLE=0, MAP, OTHER};
 
 class ChowLiu {
-    matrix<int>* instances;
+    Matrix<int>* instances;
     int numAttrs;
     vector<int> attrSizes;
     
@@ -130,14 +127,14 @@ public: /* Data for factors is here - handle with care */
     /// the degree of the attributes in the c-l tree
     int* s0; // [numAttrs]
     /// the probability information
-    vector<matrix<double>* > mutualCounts;
+    vector<Matrix<double>* > mutualCounts;
 
 public:
     void computeMutualCounts();
     void computeMutualInfo();
     void findBestFactors();
 
-    ChowLiu(matrix<int>* _instances, vector<int>* _attrSizes = NULL) {
+    ChowLiu(Matrix<int>* _instances, vector<int>* _attrSizes = NULL) {
         this->instances = _instances;
         // This section has to be modified
         if (_attrSizes == NULL) { // original code - use from common.cpp

@@ -4,9 +4,9 @@
 // Description:
 // Author: Vinay Jethava
 // Created: Thu Apr  8 15:14:31 2010 (+0200)
-// Last-Updated: Mon Apr 12 17:33:33 2010 (+0200)
+// Last-Updated: Wed Apr 14 22:05:23 2010 (+0200)
 //           By: Vinay Jethava
-//     Update #: 88
+//     Update #: 93
 // URL:
 // Keywords:
 //
@@ -20,9 +20,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <dai/alldai.h>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
+
 #include <dai/varset.h>
 #include <dai/exceptions.h>
 #include <dai/bp.h>
@@ -32,13 +30,19 @@
 #include "dataset.h"
 using namespace std;
 
+
+// #define DEBUG_INF
+// #define ONLY_CL
+// #define ONLY_WORDS
+
 // Read from common.cpp
 extern int numAttributes;
 extern int attrNumVals[];
-extern string* attributes[]; 
+extern string* attributes[];
+extern string attrNames[];
 
 Engine::Engine() {
-   
+
     // copying to allow modification later - this part is all that needs
     // to be changed, if moving to a different set of attributes. Currently,
     // attributes defined in common.cpp
@@ -52,10 +56,23 @@ Engine::Engine() {
     wordFactorsFlag = false;
     queryFactorsFlag = false;
     clFactorsFlag = false;
-    sGraph= NULL;
-    sFactors = NULL; 
-  }
+    sGraph = NULL;
+    sFactors = NULL;
+    solution = new vector<Factor > ();
+    // FIXME: initialization using params defined in wnconnector.cpp
+    wnc = new WnConnector();
+}
+
+string Engine::getAttrStr(int attrCount, int indexInAttr, string* name) {
+    // FIXME: clear attrNames dependency
+    assert((attrCount < numAttrs) && (attrCount >= 0));
+    assert((indexInAttr >= 0) && (indexInAttr < attrSizes[attrCount]));
+    if (name != NULL)
+        *name = attrNames[attrCount];
+    return attributes[attrCount][indexInAttr];
+}
 /// Reads the ARFF file name data part.
+
 vector<vector<int> > Engine::readArff(string fileName, string idFileName) {
     vector<vector<int> > result;
     ifstream inFileStream;
@@ -114,7 +131,7 @@ vector<vector<int> > Engine::readArff(string fileName, string idFileName) {
         }
         result.push_back(currAttrState);
     }
-    instances = new matrix<int>(result.size(), result[0].size());
+    instances = new Matrix<int>(result.size(), result[0].size());
     for (int i = 0; i < (int) instances->size1(); i++) {
         for (int j = 0; j < (int) instances->size2(); j++) {
             instances->insert_element(i, j, result[i][j]);
@@ -168,18 +185,17 @@ void Engine::readQueries(string fileName) {
             // check that at least one word is present with freq, 
             if ((tokens.size() > 0) && (tokens.size() % 2 == 0)) {
                 vector<string> words;
-                vector<int> freq;
-
+                vector<int> freq;                
                 enum State {
-                    WORD = 0, FREQ
+                    S_WORD=0, S_FREQ
                 };
-                State state = WORD;
+                State state = S_WORD;
                 for (int i = 0; i < (int) tokens.size(); i++) {
                     switch (state) {
-                        case WORD:
+                        case S_WORD:
                             words.push_back(tokens[i]);
                             break;
-                        case FREQ:
+                        case S_FREQ:
                             int cfreq = atoi(tokens[i].c_str());
                             freq.push_back(cfreq);
                             break;
@@ -195,7 +211,8 @@ void Engine::readQueries(string fileName) {
                 //                if ((count >= 4910) && (count <= 4920)) cin.get();
 
                 Query* query = new Query(id, words, freq, this);
-                query->count = count - 1; // FIXME: Hack to handle multiple ids
+                // FIXME: Hack to handle multiple ids
+                query->count = count - 1;
                 this->queries.push_back(query);
                 // Insert the query corresponding to the word in wordToQueryMp
                 for (int i = 0; i < (int) words.size(); i++) {
@@ -232,8 +249,12 @@ void Engine::readQueries(string fileName) {
 
 /// Computes the Chow Liu Factors.
 
-void Engine::computeChowLiu() {
-    cl = new ChowLiu(this->instances);
+void Engine::computeChowLiu(Matrix<int> * trInstances) {
+
+    if (trInstances == NULL) {
+        trInstances = this->instances;
+    }
+    cl = new ChowLiu(trInstances);
     cl->computeMutualCounts();
     cl->computeMutualInfo();
     cl->findBestFactors();
@@ -259,11 +280,11 @@ void Engine::makeChowLiuFactors(CLFactorType clType, double alpha) {
     assert(queryReadFlag == true);
     for (int i = 0; i < numAttrs - 1; i++) {
         int idx = cl->j0[i];
-        matrix<double>* cProb = cl->mutualCounts[idx];
+        Matrix<double>* cProb = cl->mutualCounts[idx];
         pair<int, int> pi1 = cl->getXY(idx);
         VarSet* cVarSet = new VarSet(*facetVars[pi1.first], *facetVars[pi1.second]);
-       // fprintf(stderr, "facetVars[%d] states: %d\n", pi1.first, (int) facetVars[pi1.first]->states());
-       // fprintf(stderr, "facetVars[%d] states: %d\n", pi1.second, (int) facetVars[pi1.second]->states());
+        // fprintf(stderr, "facetVars[%d] states: %d\n", pi1.first, (int) facetVars[pi1.first]->states());
+        // fprintf(stderr, "facetVars[%d] states: %d\n", pi1.second, (int) facetVars[pi1.second]->states());
         Factor* cFactor = new Factor(*cVarSet);
         map<Var, size_t> state;
 
@@ -291,17 +312,42 @@ void Engine::makeChowLiuFactors(CLFactorType clType, double alpha) {
             }
         }
         clFactors.push_back(cFactor);
-        //        cerr<<*cFactor << endl<< (*cProb)<<endl<<endl;
-        //        cerr << *cVarSet <<  "states: "<< cVarSet->nrStates() <<endl;
+        //   cerr << *cFactor << endl << (*cProb) << endl << endl;
+
+
     }
-    this->clFactorsFlag = true; 
+
+    /// Make the singleton factors;
+    for (int i = 0; i < numAttrs; i++) {
+        int cdegree = cl->s0[i];
+        if (cdegree != 1) { // introduce a singleton factor.
+            int idx = cl->getI(i, i);
+            VarSet* cVarSet = new VarSet(*facetVars[i]);
+            Factor* cFactor = new Factor(*cVarSet);
+            Matrix<double>* cProb = cl->mutualCounts[idx];
+            for (int si = 0; si < attrSizes[i]; si++) {
+                double p = (*cProb)(si, 0);
+                double v = ((p == 0.0) ? 0.0 : pow(p, 1.0 - cdegree));
+                (*cFactor)[si] = v;
+            }
+            cFactor->normalize();
+            //    cerr << *cFactor << endl << (*cProb) << endl << endl;
+
+
+            clFactors.push_back(cFactor);
+        }
+        // cerr<<attrNames[i]<<" degree: "<<cdegree<<"\n";
+
+    }
+
+    this->clFactorsFlag = true;
 }
 
 
 /// make the factors corresponding to the queries
 
 void Engine::makeQueryFactors(map<string, vector<Query*>* >* ptrWordQueryMp) {
-    
+
     if (ptrWordQueryMp == NULL) {
         ptrWordQueryMp = &(this->wordToQueryMp);
     }
@@ -316,9 +362,11 @@ void Engine::makeQueryFactors(map<string, vector<Query*>* >* ptrWordQueryMp) {
 }
 
 void Engine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
+
     typedef vector<Query*>::const_iterator VqIter;
     map<string, vector<Factor*>* >::iterator sfvIter = wordFactors.find(word);
     if (sfvIter == wordFactors.end()) { // introduce a new factors
+        FPRINTF(stderr, "makeFactorForWord(%s)\n ", word.c_str());
         vector<Factor*>* cVec = new vector<Factor*>();
         for (int i = 0; i < this->numAttrs; i++) {
             Factor* vFactor = new Factor(*facetVars[i]);
@@ -354,7 +402,7 @@ void Engine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
                 }
             } else {
                 // TODO: Wordnet has to fit in here. 
-                int dummy = 1;
+              
             }
             // normalized factor;
             for (int j = 0; j < mystates; j++) {
@@ -372,23 +420,23 @@ void Engine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
 
 // actually does a top-level compute
 
-void Engine::solveForQuery(const vector<string>* words, const vector<int>* freq) {
+vector<size_t> Engine::solveForQuery(const vector<string>* words, const vector<int>* freq) {
 
     assert((freq == NULL) || (words->size() == freq->size()));
     assert(words->size() > 0);
     typedef map<string, vector<Query* >* > SqMp;
     typedef SqMp::iterator SqMpIter;
     typedef map<string, vector<Factor* >* > WfMp;
-    typedef WfMp::iterator WfMpIter; 
+    typedef WfMp::iterator WfMpIter;
 
     // CLEAR THE PAST 
-     if(sFactors == NULL) {
-        sFactors = new vector<Factor>();
+    if (sFactors == NULL) {
+        sFactors = new vector<Factor > ();
     } else {
         sFactors->clear();
     }
 
-    if(sGraph != NULL) {
+    if (sGraph != NULL) {
         FactorGraph* tGraph = sGraph;
         sGraph = NULL;
         delete(tGraph);
@@ -396,80 +444,422 @@ void Engine::solveForQuery(const vector<string>* words, const vector<int>* freq)
     // make the factors
     for (int wi = 0; wi < words->size(); wi++) {
         string cword = words->at(wi);
-        int cfreq = ((freq == NULL)?(1):(freq->at(wi)));
+        int cfreq = ((freq == NULL) ? (1) : (freq->at(wi)));
         SqMpIter mIter = wordToQueryMp.find(cword);
         vector<Query*>* pVecQ;
-        if(mIter == wordToQueryMp.end())
+        if (mIter == wordToQueryMp.end())
             pVecQ = NULL;
         else
             pVecQ = mIter->second;
         makeFactorForWord(cword, pVecQ);
     }
+
     // start making the graph
-   
+
     // get the Chow Liu factors;
-    if(!clFactorsFlag)
+    if (!clFactorsFlag)
         this->makeChowLiuFactors();
 
     FOREACH(iter, this->clFactors) {
         Factor* ofPtr = (*iter);
         Factor newFactor(ofPtr->vars(), ofPtr->p());
+        // FIXME: Hack to investigate only words
+#ifndef ONLY_WORDS
         sFactors->push_back(newFactor);
+#endif
     }
+    FPRINTF(stderr, "solveForQuery(): Post add-CL factorSize: %d\n", (int) sFactors->size());
+    int wi = 0;
 
     FOREACH(iter, *words) {
-        string cword = *iter; 
+        string cword = *iter;
         WfMpIter wIter = wordFactors.find(cword);
         assert(wIter != wordFactors.end());
-        vector<Factor*> *vFactor = wIter->second;
-        for(int i=0 ; i < numAttrs; i++) {
-            Factor* pcFact = vFactor->at(i);
-            Factor newFactor(pcFact->vars(), pcFact->p() );
-            sFactors->push_back(newFactor);
+        int cfreq = ((freq == NULL) ? (1) : (freq->at(wi)));
+        for (int jj = 0; jj < cfreq; jj++) {
+            // handling multiple occurrences of word in query
+            vector<Factor*> *vFactor = wIter->second;
+            for (int i = 0; i < numAttrs; i++) {
+                Factor* pcFact = vFactor->at(i);
+                Factor newFactor(pcFact->vars(), pcFact->p());
+                // FIXME: Hack to investigate only CL factor graph
+#ifndef ONLY_CL
+                sFactors->push_back(newFactor);
+#endif
+            }
         }
+        FPRINTF(stderr, "solveForQuery() post Word-add factor size: %d\n", (int) sFactors->size());
+        wi++;
     }
-    sGraph = new FactorGraph(*sFactors) ;
+    sGraph = new FactorGraph(*sFactors);
     ofstream dotStream;
     dotStream.open("sample.dot");
     sGraph->printDot(dotStream);
     sGraph->WriteToFile("sample.fg");
-    
+
     PropertySet opts;
 
     size_t maxiter = 1000;
     Real tol = 1e-6;
-    size_t verb = 1;
-
-
+    size_t verb = 0;
     opts.Set("maxiter", maxiter);
     opts.Set("tol", tol);
     opts.Set("verbose", verb);
-
-
-    BP bpEngine(*sGraph, opts("updates",string("SEQFIX"))("inference",string("SUMPROD"))("logdomain",false));
+    BP bpEngine(*sGraph, opts("updates", string("SEQFIX"))("inference", string("MAXPROD"))("logdomain", false));
     bpEngine.init();
     bpEngine.run();
+
+    BP bp2(*sGraph, opts("updates", string("SEQFIX"))("inference", string("SUMPROD"))("logdomain", false));
+    bp2.init();
+    bp2.run();
+    //        for (size_t i = 0; i < sGraph->nrVars(); i++) {
+    //            //  cout<< "var: "<< attrNames[(int) i]<< " size: " << attrSizes[i]<<endl;
+    //            cout<< bp2.belief(sGraph->var(i))<<endl;
+    //        }
+    solution->clear();
+    return bpEngine.findMaximum();
 }
 
-void Engine::testSolver() {
-  readArff("data/classifieds.txt");
-  readQueries("data/Matrix");
-  computeChowLiu();
-  makeFacetVars();
-  makeChowLiuFactors();
-  makeQueryFactors();
-  char choice;
-  int numQ = (int) queries.size();
-  do {
-        Query* sample = queries[rand()%numQ];
+vector<vector<size_t> > Engine::getQueriesMAP(const vector<vector<string>* >& wordVec,
+        const vector<vector<int>* >& freqVec) {
 
-        vector<string> words = sample->getWords();
-        cout<<" Query: "<<getStr<string>(words)<<endl;
-        solveForQuery(&words);
-        cin.get(choice);
+    typedef vector<vector<size_t> > VVSz;
+    typedef vector<vector<string>* > VVpStr;
+    typedef vector<vector<int>*> VVpInt;
 
-  } while( (choice == 'y' ) || (choice == 'Y'));
+    assert(wordVec.size() > 0);
+    assert((freqVec.size() == 0) || (freqVec.size() == wordVec.size()));
+
+    VVSz result;
+
+    int num = wordVec.size();
+    for (int i = 0; i < num; i++) {
+        vector<int>* cf = NULL;
+        if (freqVec.size() > 0)
+            cf = freqVec[i];
+        vector<string>* cw = wordVec[i];
+        vector<size_t> cres = solveForQuery(cw, cf);
+        result.push_back(cres);
+    }
+    return result;
 }
+
+/**
+ * Writes out the results in selected directory for direct use in matlab
+ */
+void Engine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples, string dirName) {
+    int numT = samples.size();
+    // result = 1 => correctly classified
+    vector<int> result;
+    // hamming distance between output/true
+    vector<int> hamming;
+    stringstream dirCmd(""), qName(""), oName(""), tName(""), aName(""), hName("");
+    ofstream rqQuery, rqOut, rqTrue, rqAcc, rqHamming;
+
+    dirCmd << "mkdir " << dirName;
+    system(dirCmd.str().c_str());
+
+    qName << dirName << "/" << "query.txt";
+    rqQuery.open(qName.str().c_str());
+
+    oName << dirName << "/" << "out.txt";
+    rqOut.open(oName.str().c_str());
+
+    tName << dirName << "/" << "true.txt";
+    rqTrue.open(tName.str().c_str());
+
+    aName << dirName << "/" << "accuracy.txt";
+    rqAcc.open(aName.str().c_str());
+
+    hName << dirName << "/" << "hamming.txt";
+    rqHamming.open(hName.str().c_str());
+
+    // compute the statistics
+    double overallCorrect = 0.0;
+    int accV[numAttrs];
+    double sumV[numAttrs];
+    for (int i = 0; i < numAttrs; i++) {
+        sumV[i] = 0.0;
+    }
+    for (int i = 0; i < output.size(); i++) {
+        rqQuery << samples[i]->getStr() << "\n";
+        bool correct = true;
+        int idx = 0;
+        int hammingCount = 0;
+        // compare attribute by attribute
+        FPRINTF(stderr, "testSolver() i: %d\n", i);
+        while (idx < numAttrs) {
+
+            int xOut = (int) output[i][idx];
+            int xTrue = (int) getQueryAttribute(samples[i], idx);
+            rqOut << getAttrStr(idx, xOut) << "\t";
+            rqTrue << getAttrStr(idx, xTrue) << "\t";
+            if (xOut != xTrue) {
+                hammingCount++;
+                correct = false;
+                accV[idx] = (0);
+            } else {
+                accV[idx] = (1);
+            }
+
+            sumV[idx] = sumV[idx] + accV[idx];
+            idx++;
+        }
+        overallCorrect += (int) correct;
+        rqOut << "\n";
+        rqTrue << "\n";
+        rqAcc << ((int) correct);
+        for (int i1 = 0; i1 < numAttrs; i1++) {
+            rqAcc << " " << accV[i1];
+        }
+        rqAcc << "\n";
+        rqHamming << hammingCount << "\n";
+    }
+
+    double cAcc = ((double) overallCorrect) / ((double) numT) * 100.0;
+    fprintf(stderr, "Accuracy: %g [", cAcc);
+    for (int i1 = 0; i1 < numAttrs; i1++) {
+        double cAcc1 = ((double) sumV[i1]) * 1.0 / ((double) numT)*100.0;
+        fprintf(stderr, " %g ", cAcc1);
+    }
+    fprintf(stderr, "]\n");
+
+
+    rqTrue.close();
+    rqAcc.close();
+    rqHamming.close();
+    rqOut.close();
+    rqQuery.close();
+    fprintf(stderr, "Engine::writeRes() finished for %d test queries\n", numT);
+}
+
+/**
+ * Runs tests using a portion of the data for training
+ *
+ * @arg p  fraction of data to use for training
+ *
+ */
+void Engine::testSolver1(double p) {
+    SHOWFUNC("");
+    // TODO: Incomplete method for partial tr-tst of data
+    srand(time(NULL));
+    init("data/classifieds.txt", "data/Matrix");
+    int N = queries.size();
+    typedef vector<Query* > VQ;
+    typedef vector<Query* >* VQP;
+    typedef pair<VQP, VQP > PrVQP;
+    PrVQP prVqp = getRndSelection< Query* >(& this->queries, p);
+    VQP trQ = prVqp.first;
+    VQP tstQ = prVqp.second;
+    train(trQ);
+
+    vector<vector<string> * > wv;
+    vector<vector<int> *> fv;
+    vector<vector<size_t> > output;
+
+    FOREACH(iterQ, *tstQ) {
+        Query* sample = (*iterQ);
+        vector<string>* cw = new vector<string > (sample->getWords());
+        if (cw->size() == 0) {
+            cerr << sample->id << "\n";
+            cin.get();
+        } else {
+            const char* cshow = (getStr<string > (*cw)).c_str();
+            FPRINTF(stderr, "%d: %s\n", sample->id, cshow);
+            vector<size_t> cres = solveForQuery(cw, NULL);
+            output.push_back(cres);
+        }
+    }
+    writeRes(output, *tstQ, "result");
+}
+
+Matrix<int>* Engine::getInstances(vector<Query* > * cqueries) {
+    int n1 = cqueries->size();
+    int n2 = numAttributes;
+    Matrix<int> * result = new Matrix<int>(n1, n2);
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < n2; j++) {
+            int cattr = getQueryAttribute(cqueries->at(i), j);
+            result->insert_element(i, j, cattr);
+        }
+    }
+    return result;
+}
+
+map<string, vector<Query*>* >* Engine::getWordMpForQueries(vector<Query*>* trQ) {
+    typedef map<string, vector<Query* > * > MSVQP;
+    typedef vector<Query*> VQ;
+    MSVQP* res = new MSVQP();
+
+    FOREACH(iterQ, *trQ) {
+        vector<string> words = (*iterQ)->getWords();
+        for (int i = 0; i < (int) words.size(); i++) {
+            typedef map<string, vector<Query*>* > SqMp;
+            typedef map<string, vector<Query*>* >::iterator SqMpIter;
+            SqMpIter mIt = res->find(words[i]);
+            if (mIt == res->end()) {
+                vector<Query*>* ptrQryVec = new vector<Query*>();
+                res->insert(
+                        make_pair<string, vector<Query*>* >(words[i],
+                        ptrQryVec));
+                FPRINTF(stderr, "adding %s for query %d\n", words[i].c_str(), (*iterQ)->id);
+            }
+            mIt = res->find(words[i]);
+            mIt->second->push_back(*iterQ);
+        }
+    }
+    return res;
+}
+
+void Engine::init(string arffFile, string queryFile) {
+    SHOWFUNC("reads arff and query files");
+    srand(time(NULL));
+    readArff(arffFile);
+    readQueries(queryFile);
+    fprintf(stderr, "Engine::init() read arff and query files\n");
+}
+
+void Engine::train(vector<Query* > * trQ) {
+    SHOWFUNC("train on queries");
+    typedef Matrix<int> MI;
+    MI* trI = getInstances(trQ);
+    this->computeChowLiu(trI);
+    makeFacetVars();
+    map<string, vector<Query*> * >* cMp = getWordMpForQueries(trQ);
+    makeQueryFactors(cMp);
+    fprintf(stderr, "Engine::train() trained on %d queries\n", (int) trQ->size());
+}
+
+
+//// DEPRECATED: see testSolver1()
+//void Engine::testSolver() {
+//    srand(time(NULL));
+//    readArff("data/classifieds.txt");
+//    readQueries("data/Matrix");
+//    computeChowLiu();
+//    makeFacetVars();
+//    makeChowLiuFactors();
+//    makeQueryFactors();
+//    char choice;
+//    int numQ = (int) queries.size();
+//    int numT = 500;
+//    int counter = 0;
+//    // FIXME: DEBUG_INF allows manual querying
+//#ifdef DEBUG_INF
+//    do {
+//        Query* sample = queries[rand() % numQ];
+//        stringstream ro(""), rt(""), ra(""), rh("");
+//        vector<string> words = sample->getWords();
+//        cout << "\nQuery: " << getStr<string > (words) << endl;
+//        vector<size_t> res = solveForQuery(&words);
+//        cout<< "\n"<<getStr<size_t>(res)<<endl;
+//        // cout<<"\n Enter choice (y/n): ";
+//        int hammingCount = 0;
+//        bool correct = true;
+//        for(int idx = 0; idx < numAttrs ; idx++) {
+//            int xOut =  (int) res[idx];
+//            int xTrue = (int) getQueryAttribute(sample, idx);
+//            ro<< getAttrStr(idx, xOut)<<"\t";
+//            rt<< getAttrStr(idx, xTrue)<<"\t";
+//            if(xOut != xTrue) {
+//                hammingCount++;
+//                correct = false;
+//            }
+//        }
+//
+//        ro << "\n";
+//        rt << "\n";
+//        ra << correct<<"\n";
+//        rh << hammingCount<<"\n";
+//        cout<<endl <<ro.str()<< rt.str()<< "accuracy: " << ra.str()<< "hamming: "<< rh.str();
+//        getchar();
+//        counter++;
+//    } while(counter < numT );
+//    // while ((choice == 'y') || (choice == 'Y'));
+//#else
+//    vector<vector<string> * > wv;
+//    vector<vector<int> *> fv;
+//    vector<Query*> samples;
+//
+//    for (int i = 0; i < numT; i++) {
+//        Query* sample = queries[rand() % numQ];
+//        vector<string>* cw = new vector<string>(sample->getWords());
+//        wv.push_back(cw);
+//        samples.push_back(sample);
+//    }
+//
+//    vector<vector<size_t> > output = getQueriesMAP(wv, fv);
+//
+//    // result = 1 => correctly classified
+//    vector<int> result;
+//    // hamming distance between output/true
+//    vector<int> hamming;
+//
+//    ofstream rqQuery, rqOut, rqTrue, rqAcc, rqHamming;
+//    rqQuery.open("res/query.txt");
+//    rqOut.open("res/out.txt");
+//    rqTrue.open("res/true.txt");
+//    rqAcc.open("res/accuracy.txt");
+//    rqHamming.open("res/hamming.txt");
+//    // compute the statistics
+//    double overallCorrect = 0.0;
+//    int accV[numAttrs];
+//    double sumV[numAttrs];
+//    for(int i=0; i < numAttrs; i++) {
+//        sumV[i] = 0.0;
+//    }
+//    for(int i=0; i < output.size(); i++) {
+//        rqQuery<<samples[i]->getStr()<<"\n";
+//        bool correct = true;
+//        int idx = 0;
+//        int hammingCount = 0;
+//        // compare attribute by attribute
+//        FPRINTF(stderr, "testSolver() i: %d\n", i);
+//        while(idx < numAttrs) {
+//
+//            int xOut =  (int) output[i][idx];
+//            int xTrue = (int) getQueryAttribute(samples[i], idx);
+//            rqOut<< getAttrStr(idx, xOut)<<"\t";
+//            rqTrue<< getAttrStr(idx, xTrue)<<"\t";
+//            if(xOut != xTrue) {
+//                hammingCount++;
+//                correct = false;
+//                accV[idx] = (0);
+//            } else {
+//                accV[idx] = (1);
+//            }
+//
+//            sumV[idx] = sumV[idx] + accV[idx];
+//            idx++;
+//        }
+//        overallCorrect += (int) correct;
+//        rqOut<<"\n";
+//        rqTrue<<"\n";
+//        rqAcc<<((int) correct);
+//        for(int i1=0; i1 < numAttrs; i1++) {
+//            rqAcc<<" "<<accV[i1];
+//        }
+//        rqAcc<<"\n";
+//        rqHamming<<hammingCount<<"\n";
+//    }
+//
+//    double cAcc = ((double) overallCorrect) / ((double) numT) * 100.0;
+//    fprintf(stderr, "Accuracy: %g [", cAcc);
+//    for (int i1 = 0; i1 < numAttrs; i1++) {
+//        double cAcc1 = ((double) sumV[i1]) * 1.0 / ((double) numT)*100.0;
+//        fprintf(stderr, " %g ", cAcc1);
+//    }
+//    fprintf(stderr, "]\n");
+//
+//
+//    rqTrue.close();
+//    rqAcc.close();
+//    rqHamming.close();
+//    rqOut.close();
+//    rqQuery.close();
+//    FPRINTF(stderr, "Hi There! finished querying.\n");
+//#endif
+//}
 //
 // engine.cpp ends here
 

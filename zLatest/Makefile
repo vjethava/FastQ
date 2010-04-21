@@ -8,7 +8,7 @@ CCFLAGS=-Wno-deprecated -g `mysql_config --cflags`
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
 INCS=$(wildcard *.h)
-
+USERDEFS=
 SRCDIR=src
 INCDIR=inc
 OBJDIR=obj
@@ -17,7 +17,7 @@ OBJDIR=obj
 %.cpp : $(INCS)
 
 %.o : %.cpp
-	$(CC) $(CCFLAGS) $(CCINC) -c $< -o $@
+	$(CC) $(USERDEFS) $(CCFLAGS) $(CCINC) -c $< -o $@
 
 main: $(OBJS)
 	$(CC) $(CCLIB)  -o $@  $(OBJS) $(LIB)

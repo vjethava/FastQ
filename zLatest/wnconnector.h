@@ -41,20 +41,24 @@ private: // Database details
 
 public: // result for current word
     map<string, double>* wnMp;
-
+    stringstream queryStr; 
 private:
-    void query(const char * qstr);
-    inline void query(string qStr) { query(qStr.c_str()); }
+    bool query(const char * qstr);
+
+    inline bool query(string qStr) {
+        return query(qStr.c_str());
+    }
 public:
     WnConnector(map<string, string>* params = NULL);
-    ~WnConnector();
-    bool queryWord(const string& word);
+
+    bool queryWord(const string word);
     // XXX: ~WnConnector() some time causes problems
+
     ~WnConnector() {
         FPRINTF(stderr, "destroying WnConnector object\n");
         /* close connection */
         mysql_free_result(result);
-        mysql_close(cnxn);
+        
     }
 };
 #endif

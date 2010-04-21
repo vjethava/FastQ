@@ -21,11 +21,10 @@
 
 int main() {
   srand(time(NULL));
-  double p = 0.5;
+  double p = 0.2;
   Engine engine;
-//  engine.testSolver1(p);
-  WnConnector wnc(NULL);
-  wnc.queryWord("papa");
+  engine.testSolver(p);
+//  engine.updateWnMp(0, "casa", true);
   return 0;
 }
 

@@ -45,8 +45,8 @@ using namespace std;
 #define FOREACH(it,c) for(typeof((c).begin()) it=(c).begin();it!=(c).end();++it)
 // print error messages or not
 
-#define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __PRETTY_FUNCTION__, s)
-//#define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __FUNCTION__, s)
+// #define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __PRETTY_FUNCTION__, s)
+#define SHOWFUNC(s) fprintf(stderr, "%s: %s\n", __FUNCTION__, s)
 #ifdef DEBUG
 #define PRINTF printf
 #define FPRINTF fprintf
@@ -91,6 +91,11 @@ typedef vector<DOUBLE>::iterator VD_ITER;
 typedef vector<STRING>::iterator VS_ITER;
 typedef vector<INT>::iterator VI_ITER;
 
+typedef map<string, string> MSS;
+typedef map<int, int> MII;
+
+
+wstring getWstr(string word1);
 
 template <class T>
 pair<vector<T>*, vector<T>* >  getRndSelection(vector<T>* v, double p=1.0) {

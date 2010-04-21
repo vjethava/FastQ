@@ -23,6 +23,11 @@ string* attributes[9] = {specificity, task, objective,
 string attrNames[9] = {"specificity", "task", "objective", "authosen", "spatialsen"
     , "timesen", "polywords", "genre", "topic" };
 
+wstring getWstr(string word1) {
+    wstring word(word1.length(), L' ');
+    std::copy(word1.begin(), word1.end(), word.begin());
+    return word;
+}
 
 vector<string> split(string ip, char delim) {
     vector<string> result;

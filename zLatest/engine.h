@@ -24,12 +24,22 @@ using namespace std;
 using namespace dai;
 /// The main class for fastweb
 class Engine {
+
+private: // TYPES
+    typedef vector<Query*> VQp;
+    typedef vector<Query*>* VpQp;
+    typedef map<string, vector<Query*>* > MSVpQp;
+    typedef vector<Factor> VF;
+    typedef vector<Factor*> VFp;
+    typedef map<string, vector<Factor* > *> MSVpFp;
+    typedef vector<Var*> VVarp;
+
 private: // BOOK KEEPING
     ChowLiu * cl;
     WnConnector* wnc;
     Matrix<int>* instances;
-    vector<Query*> queries;
-    map<string, vector<Query*>* > wordToQueryMp;
+    VQp queries;
+    MSVpQp wordToQueryMp;
     map<int, int> instanceIdMp;
     
 private: // DATASET (change for new attributes)
@@ -37,10 +47,10 @@ private: // DATASET (change for new attributes)
     vector<int> attrSizes;
 
 private: // FACTOR GRAPH CONSTRUCTION
-    vector<Var*> facetVars;
-    vector<Factor*> clFactors;
-    vector<Factor*> queryFactors;
-    map<string, vector<Factor*>* > wordFactors;
+    VVarp facetVars;
+    VFp clFactors;
+    VFp queryFactors;
+    MSVpFp wordFactors;
 
 private: // FLAGS
     bool chowLiuFlag;
@@ -52,22 +62,25 @@ private: // FLAGS
 
 public: // SOLUTION FOR NEW QUERY
     FactorGraph* sGraph;
-    vector<Factor>* sFactors;
-    vector<Factor>* solution;
+    VF* sFactors;
+    VF* solution;
 
-private: // WORDNET INTEGRATION
+public: // WORDNET INTEGRATION
     /// the max depth at which to search for related words
     int  maxBfsDepth;
     /// hit per level up in the query_word-wn_word distance (in graph)
     double levelFactor;
-    vector<string>* missing;
-    vector<string>* found;
+    /// (overall) list of words which were not found in wn
+    VS *missingWN, *missingDB;
+    /// (overall) map of the depth at which the words were found in wn
+    map<string, int>* foundMp;
+    /// list of current words neighbours
     map<string, double>* wnMp;
     /// computes the wordnet relations - recursive
-    void updateWnMp(int level, string word, bool update=true);
+    int updateWnMp(int level, string word, bool update=true);
     
 public:
-    void train(vector<Query*> * trQ); 
+    MSVpQp* train(vector<Query*> * trQ);
     inline int getQueryAttribute(Query* q, int attr) {
         return (*instances)(q->count, attr);
     }
@@ -78,26 +91,25 @@ public:
     ~Engine() {   }
     void makeFactorGraph();
     void initializeFacets();
-    vector<vector<int> > readArff(string fileName,
+    VVI readArff(string fileName,
             string idFileName = "");
     void readQueries(string fileName);
     // XXX: Modified for partial data usage for training 
     void computeChowLiu(Matrix<int> * trInstances = NULL);
     void makeFacetVars();
     void makeChowLiuFactors(CLFactorType clType = MLE, double alpha = 0.5);
-    void makeQueryFactors(map<string, vector<Query*>* >* ptrWqMp = NULL);
-    void makeFactorForWord(const string& word, const vector<Query*>* vq = NULL);
+    void makeQueryFactors(MSVpQp* ptrWqMp = NULL);
+    void makeFactorForWord(const string& word, const VQp* vq = NULL);
     vector<size_t> solveForQuery(const vector<string>* word,
-            const vector<int>* freq = NULL);
+            const vector<int>* freq = NULL, MSVpQp* sqMpPtr=NULL);
     vector<vector<size_t> > getQueriesMAP(
             const vector<vector<string>* > & wordVec,
             const vector<vector<int>* > & freqVec);
-    void testSolver();
-    void testSolver1(double trainingPct = 1.0);
-    map<string, vector<Query*>* >* getWordMpForQueries(vector<Query*>* trQ);
+    void testSolver(double trainingPct = 1.0);
+    MSVpQp* getWordMpForQueries(vector<Query*>* trQ);
     void init(string arffFile, string queryFile);
     void writeRes(vector<vector<size_t> >& output,
-            vector<Query*>& samples,
+            VQp & samples,
             string dirName = "res");
 };
 

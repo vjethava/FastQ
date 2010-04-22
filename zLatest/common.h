@@ -96,23 +96,23 @@ typedef map<int, int> MII;
 
 
 wstring getWstr(string word1);
+string getTimeStr(); 
 
 template <class T>
-pair<vector<T>*, vector<T>* >  getRndSelection(vector<T>* v, double p=1.0) {
-    assert ((p > 0.0) && (p <= 1.0));
-    vector<T >* result = new vector< T >();
-    vector<T >* unselected  = new vector< T >();
+pair<vector<T>*, vector<T>* > getRndSelection(vector<T>* v, double p = 1.0) {
+    assert((p > 0.0) && (p <= 1.0));
+    vector<T >* result = new vector< T > ();
+    vector<T >* unselected = new vector< T > ();
     for (typeof ((v)->begin()) iter = (v)->begin(); iter != (v)->end(); ++iter) {
-        double u = ((double) rand())/( (double) RAND_MAX);
-        if(u <= p) {
+        double u = ((double) rand()) / ((double) RAND_MAX);
+        if (u <= p) {
             result->push_back(*iter);
         } else {
             unselected->push_back(*iter);
         }
     }
-    return make_pair<vector< T >* , vector< T >* >(result, unselected);
+    return make_pair<vector< T >*, vector< T >* >(result, unselected);
 }
-
 
 template<typename T> string getStr(vector<T> v) {
     stringstream ss("");

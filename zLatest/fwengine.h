@@ -5,8 +5,8 @@
  * Created on 9 April, 2010, 4:01 PM
  */
 
-#ifndef _ENGINE_H
-#define	_ENGINE_H
+#ifndef _FW_ENGINE_H
+#define	_FW_ENGINE_H
 
 #include "common.h"
 #include "wnconnector.h"
@@ -14,16 +14,18 @@
 #include <iostream>
 #include <cstdio>
 #include <fstream>
+
 #include <dai/factorgraph.h>
 #include <dai/var.h>
 #include <dai/index.h>
 #include <dai/exceptions.h>
+
 #include <map>
 #include "dataset.h"
 using namespace std;
 using namespace dai;
 /// The main class for fastweb
-class Engine {
+class FwEngine {
 
 private: // TYPES
     typedef vector<Query*> VQp;
@@ -41,7 +43,11 @@ private: // BOOK KEEPING
     VQp queries;
     MSVpQp wordToQueryMp;
     map<int, int> instanceIdMp;
-    
+
+private:
+    /// just to keep track of % training data - do not use externally
+    double pTestSolver;
+    int unseenWords;
 private: // DATASET (change for new attributes)
     int numAttrs;
     vector<int> attrSizes;
@@ -59,6 +65,11 @@ private: // FLAGS
     bool wordFactorsFlag;
     bool queryFactorsFlag;
     bool clFactorsFlag;
+
+private: // ALGORITHM FLAGS
+    bool onlyCL;
+    bool useWN;
+    bool onlyWords;
 
 public: // SOLUTION FOR NEW QUERY
     FactorGraph* sGraph;
@@ -87,8 +98,8 @@ public:
 
     Matrix<int>* getInstances(vector<Query* > * cqueries);
     string getAttrStr(int attrNum, int indexInAttr, string* name=NULL);
-    Engine();
-    ~Engine() {   }
+    FwEngine();
+    ~FwEngine() {   }
     void makeFactorGraph();
     void initializeFacets();
     VVI readArff(string fileName,
@@ -105,10 +116,11 @@ public:
     vector<vector<size_t> > getQueriesMAP(
             const vector<vector<string>* > & wordVec,
             const vector<vector<int>* > & freqVec);
-    void testSolver(double trainingPct = 1.0);
+    int testSolver(double trainingPct = 1.0, bool useWN = true,
+            bool onlyCL = false, bool onlyWords = false, int num=0);
     MSVpQp* getWordMpForQueries(vector<Query*>* trQ);
     void init(string arffFile, string queryFile);
-    void writeRes(vector<vector<size_t> >& output,
+    int writeRes(vector<vector<size_t> >& output,
             VQp & samples,
             string dirName = "res");
 };

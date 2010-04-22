@@ -27,7 +27,7 @@
 using namespace std;
 using namespace dai;
 
-class Engine;
+class FwEngine;
 
 class MyVar {
     string name;
@@ -73,10 +73,10 @@ class Query {
 public:
     map<string, int>* words;
     int id;
-    Engine* engine;
+    FwEngine* engine;
     int count; 
 public:
-    Query(int _id, vector<string> _words, vector<int> _freq, Engine* engine = NULL) {
+    Query(int _id, vector<string> _words, vector<int> _freq, FwEngine* engine = NULL) {
         this->words = new map<string, int>();
         assert(_words.size() > 0); 
         assert(_words.size() == _freq.size());

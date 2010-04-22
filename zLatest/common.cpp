@@ -29,6 +29,16 @@ wstring getWstr(string word1) {
     return word;
 }
 
+string getTimeStr() {
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [15];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(buffer, 15, "%d/%m %H:%M:%S", timeinfo);
+    string result(buffer);
+    return result;
+}
 vector<string> split(string ip, char delim) {
     vector<string> result;
     int pos = 0;

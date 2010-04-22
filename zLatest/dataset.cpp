@@ -190,7 +190,7 @@ void ChowLiu::findBestFactors() {
             assigned.insert(toAssign);
         }
         pair<int, int> cedge(-1, -1);
-        double mval = 0.0;
+        double mval = -1.0;
         FOREACH(it1, unassigned) {
             FOREACH(it2, assigned) {
                 double cval = wtMatrix(*it1, *it2);

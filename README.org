@@ -1,4 +1,10 @@
 * FastQ
+
+Code for multi-facet intent classification of search queries using graphical models. 
+This code incorporates WordNet, thus exploiting the semantic relationships in the lexicon to improve the classification results.
+
+* Compilation
+
 To compile, goto src/ and run make. The following paths need to be edited
 for correct compilation: 
  
@@ -12,11 +18,11 @@ MATLAB_ROOT=/chalmers/sw/sup/matlab-2009b
 
 TODO autoconf/automake
 
-* Running on Linux
+** Running on Linux
 
 On njlaptop: If the path does not work, add to path the following: /
 
-* Running on Mac
+** Running on Mac
 
 - See details of configuring for mac on http://developer.apple.com/internet/opensource/osdb.html
 - If installing from port, the default location changes to /opt/local/

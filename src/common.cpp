@@ -1,7 +1,6 @@
 #include "common.h"
 int numAttributes = 9;
 string specificity[3]= {"medium","specific","broad"};
-
 string  task[3] = {"inf", "notinf", "both"};
 string  objective[2] = {"resource", "action"};
 string  authosen[2] = {"yes", "no"};
@@ -9,14 +8,30 @@ string  spatialsen[2] = {"yes", "no"};
 string timesen[2] = {"yes", "no"};
 string  polywords[2] =  {"yes", "no"};
 string  genre[4] = {"reference","news","business","community"};
-string  topic[23] = {"Adults-Sex", "Arts-Culture", "Finance",
-                       "Cars-Transportation", "Computers-Internet", "Education",
-                       "Entertainment-Music-Games", "Health", "Home-Garden",
-                       "Politics-Government", "Religion-Belief-Systems",
-                       "Science-Mathematics", "Social-Science", "Sports",
-                       "Technology-Electronic", "Travel", "Beauty-Style",
-                       "Industrial-Goods-Services", "Undefined", "Work", "Food-Drink",
-                       "Charity", "Person"};
+string  topic[23] = {
+    "Adults-Sex",
+    "Arts-Culture",
+    "Finance",
+    "Cars-Transportation",
+    "Computers-Internet",
+    "Education",
+    "Entertainment-Music-Games",
+    "Health",
+    "Home-Garden",
+    "Politics-Government",
+    "Religion-Belief-Systems",
+    "Science-Mathematics",
+    "Social-Science",
+    "Sports",
+    "Technology-Electronic",
+    "Travel",
+    "Beauty-Style",
+    "Industrial-Goods-Services",
+    "Undefined",
+    "Work",
+    "Food-Drink",
+    "Charity",
+    "Person"};
 int attrsNumVals[9] = {3, 3, 2, 2, 2, 2, 2, 4, 23};
 string* attributes[9] = {specificity, task, objective,
     authosen, spatialsen, timesen, polywords, genre, topic};

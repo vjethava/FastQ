@@ -1,0 +1,13 @@
+* FastQ
+
+* Running on Linux
+
+On njlaptop: If the path does not work, add to path the following: /
+
+* Running on Mac
+
+- See details of configuring for mac on http://developer.apple.com/internet/opensource/osdb.html
+- If installing from port, the default location changes to /opt/local/
+   - /opt/local/var/run
+   - /opt/local/share/mysql5 
+

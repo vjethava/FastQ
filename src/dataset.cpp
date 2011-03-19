@@ -53,6 +53,10 @@ void ChowLiu::computeMutualCounts() {
                 int mi2 = getI(k, j);
                 int c1 = (*instances)(i, j);
                 int c2 = (*instances)(i, k);
+                if( (c1 < 0 ) || (c2 < 0) ) {
+                    printf(" i: %d j: %d k: %d c1: %d c2: %d\n", i ,j ,k, c1, c2);
+                    cin.get(); 
+                }
                 double val = (*mutualCounts[mi])(c1, c2);
                 mutualCounts[mi]->insert_element(c1, c2, val + 1.0);
                 mutualCounts[mi2]->insert_element(c2, c1, val + 1.0);

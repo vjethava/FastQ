@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="62">
+  <logicalFolder name="root" displayName="root" projectFiles="true">
+    <df name="zLatest" root=".">
+      <df name="data">
+      </df>
+      <df name="images">
+      </df>
+      <in>Instance.h</in>
+      <in>clplot2.m</in>
+      <in>common.cpp</in>
+      <in>common.h</in>
+      <in>dataset.cpp</in>
+      <in>dataset.h</in>
+      <in>fwengine.cpp</in>
+      <in>fwengine.h</in>
+      <in>getTopicF1.m</in>
+      <in>main.cpp</in>
+      <in>plotter.m</in>
+      <in>wnconnector.cpp</in>
+      <in>wnconnector.h</in>
+      <in>xticklabel_rotate.m</in>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false">
+      <itemPath>Makefile</itemPath>
+      <itemPath>Makefile-zLatest.mk</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile-zLatest.mk</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <compilerSet>GNU|GNU</compilerSet>
+        <platform>2</platform>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>$(MAKE) -f Makefile</buildCommand>
+          <cleanCommand>$(MAKE) -f Makefile clean</cleanCommand>
+          <executablePath>./main</executablePath>
+          <ccTool>
+            <incDir>
+              <pElem>inc</pElem>
+              <pElem>../CODE/libDAI-0.2.4/include</pElem>
+              <pElem>/opt/matlab7/extern/include</pElem>
+            </incDir>
+          </ccTool>
+        </makeTool>
+      </makefileType>
+      <item path="Instance.h" ex="true" tool="3">
+      </item>
+      <item path="dataset.h" ex="true" tool="3">
+      </item>
+      <item path="fwengine.cpp" ex="true" tool="1">
+      </item>
+      <item path="fwengine.h" ex="true" tool="3">
+      </item>
+      <item path="main.cpp" ex="true" tool="1">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

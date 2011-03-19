@@ -25,6 +25,7 @@
 using namespace std;
 using namespace dai;
 /// The main class for fastweb
+
 class FwEngine {
 
 private: // TYPES
@@ -43,7 +44,7 @@ private: // BOOK KEEPING
     VQp queries;
     MSVpQp wordToQueryMp;
     map<int, int> instanceIdMp;
-
+    map<int, int>* wnStats; 
 private:
     /// just to keep track of % training data - do not use externally
     double pTestSolver;
@@ -90,7 +91,10 @@ public: // WORDNET INTEGRATION
     /// computes the wordnet relations - recursive
     int updateWnMp(int level, string word, bool update=true);
     
-public:
+  public:
+    int MAX_DEPTH;
+
+  public:
     MSVpQp* train(vector<Query*> * trQ);
     inline int getQueryAttribute(Query* q, int attr) {
         return (*instances)(q->count, attr);
@@ -99,7 +103,10 @@ public:
     Matrix<int>* getInstances(vector<Query* > * cqueries);
     string getAttrStr(int attrNum, int indexInAttr, string* name=NULL);
     FwEngine();
-    ~FwEngine() {   }
+    ~FwEngine() {
+	wnStats->clear();
+	delete(wnStats); 
+    }
     void makeFactorGraph();
     void initializeFacets();
     VVI readArff(string fileName,
@@ -122,7 +129,8 @@ public:
     void init(string arffFile, string queryFile);
     int writeRes(vector<vector<size_t> >& output,
             VQp & samples,
-            string dirName = "res");
+		 string dirName = "res",
+	vector<double>* accRes = NULL);
 };
 
 #endif	/* _ENGINE_H */

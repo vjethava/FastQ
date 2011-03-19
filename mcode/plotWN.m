@@ -1,0 +1,12 @@
+msize = 10; 
+plot(myTrPct, [myWords], 'bh', 'MarkerSize', msize, 'MarkerFaceColor', [0 0 1] ); 
+hold on; 
+plot(myTrPct, [myFound], 'gp', 'MarkerSize', msize, 'MarkerFaceColor', [0 1 0] );
+legend('a) New Words', 'b) Found in WN');
+set(gca, 'FontSize', 15);
+grid on; 
+xlabel('% of training data', 'FontSize', 15);
+ylabel('Number of words', 'FontSize', 15);
+print(gcf, '-dpng', 'wn');
+saveas(gcf, 'wn', 'fig'); 
+set(gca, 'XLim', [0.1 0.9]);

@@ -1,12 +1,16 @@
 // engine.cpp ---
+
+// Change Log:
+// 19-Jan-2011    Vinay Jethava  
+//    Moved code cFactor->set( , ) style
 //
 // Filename: engine.cpp
 // Description:
 // Author: Vinay Jethava
 // Created: Thu Apr  8 15:14:31 2010 (+0200)
-// Last-Updated: Wed Apr 14 22:05:23 2010 (+0200)
+// Last-Updated: Thu Jan 20 19:41:18 2011 (+0100)
 //           By: Vinay Jethava
-//     Update #: 93
+//     Update #: 163
 // URL:
 // Keywords:
 //
@@ -29,7 +33,7 @@
 #include <dai/smallset.h>
 #include "dataset.h"
 using namespace std;
-const int MAX_DEPTH = 5;
+
 // #define DEBUG_INF
 // #define ONLY_CL
 // #define ONLY_WORDS
@@ -69,13 +73,15 @@ FwEngine::FwEngine() {
 
     pTestSolver = 1.0;
     unseenWords = 0;
-
+    MAX_DEPTH = 5;
     onlyCL = false;
     onlyWords = false;
     useWN = true;
-}
-// TODO: Take into account queryWord() result status
 
+    wnStats =  new map<int, int>() ; 
+}
+
+// TODO: Take into account queryWord() result status
 int FwEngine::updateWnMp(int level, string word, bool update) {
     stringstream ss("");
     ss << word << " " << level;
@@ -83,17 +89,27 @@ int FwEngine::updateWnMp(int level, string word, bool update) {
     typedef map<string, double> MpSD;
     if ((level == 0) || (update == true)) // looking at a top level word
         wnMp->clear();
-    double clFactor = pow(levelFactor, (double) level);
+    double clFactor = std::pow((double) levelFactor, (double) level);
     // printf("\tclFactor: %.2f\n", clFactor);
     if (level < maxBfsDepth) {
         /// query WN for neighbours of current word
         bool qres = wnc->queryWord(word);
         if (qres) {
             map<string, double>* cwordMp = wnc->wnMp;
-            vector<string> newWordsInLvl;
+	    
+	    int csize11w1 = (int) cwordMp->size();
+	    if(csize11w1 > 0) { // WN count statistics 
+	    if(this->wnStats->find(csize11w1) == this->wnStats->end()) {
+		this->wnStats->insert(make_pair<int, int>(csize11w1, 0));
+	    }
+	    int aosx = wnStats->find(csize11w1)->second + 1; 
+	    // wnStats->insert(make_pair<int, int>(csize11w1, aosx));
+	    (*wnStats)[csize11w1] = aosx ; 
+	    }
+	         vector<string> newWordsInLvl;
             for (map<string, double>::iterator iterMp = cwordMp->begin();
-                    iterMp != cwordMp->end();
-                    ++iterMp) { // look at the neighbours of current word in WN
+                 iterMp != cwordMp->end();
+                 ++iterMp) { // look at the neighbours of current word in WN
                 string cw = iterMp->first;
                 double cd = iterMp->second;
                 MpSD::iterator wIter = wnMp->find(cw);
@@ -124,8 +140,8 @@ string FwEngine::getAttrStr(int attrCount, int indexInAttr, string* name) {
         *name = attrNames[attrCount];
     return attributes[attrCount][indexInAttr];
 }
-/// Reads the ARFF file name data part.
 
+/// Reads the ARFF file name data part.
 vector<vector<int> > FwEngine::readArff(string fileName, string idFileName) {
     vector<vector<int> > result;
     ifstream inFileStream;
@@ -151,13 +167,14 @@ vector<vector<int> > FwEngine::readArff(string fileName, string idFileName) {
         line = line.substr(0, line.length() - 1);
         currAttrs.push_back(line);
 
-        //            if(count == 1)
-        //                {
-        //                    for(int i=0; i < numAttributes; i++) {
-        //                        fprintf(stderr, "%s\n", currAttrs[i].c_str());
-        //                    }
-        //                }
+//                    if(count == 1)
+//                        {
+//                            for(int i=0; i < numAttributes; i++) {
+//                                fprintf(stderr, "%s\n", currAttrs[i].c_str());
+//                            }
+//                        }
         vector<int> currAttrState;
+        /// FIXME: Hack to work with numberic vals for last place
         for (int i = 0; i < numAttributes; i++) {
             const char* ca = (currAttrs[i]).c_str();
             int cl = currAttrs[i].length();
@@ -165,21 +182,35 @@ vector<vector<int> > FwEngine::readArff(string fileName, string idFileName) {
             bool notFound;
             int n = attrsNumVals[i];
             int idx = 0;
-
-            do {
-                int tl = (attributes[i])[idx].length();
+            if( i == (numAttributes - 1))  {
+                idx = (int) atoi(ca);
+                idx--;
                 ta = (char*) ((attributes[i])[idx]).c_str();
-                notFound = !(strcmp(ca, ta) == 0);
-                idx++;
-                //    fprintf(stderr, "i: %d n: %d\n\tc: %s l: %d\n\tt: %s l: %d\n ", i, n, ca, cl, ta , tl);
-            } while ((idx <= n) && notFound);
-            idx--;
+                if ((idx < 0 ) || (idx >= attrsNumVals[i])) {
+                    printf(" line: %d idx: %d i: %d\n", count, idx, i);
+                    cin.get();
+                }
+                assert((idx >=0 ) && (idx < attrsNumVals[i]));
+                //        fprintf(stderr, "i: %d n: %d orig_word: %s identified: %s\n ", i, n, ca, ta);
+            } else {
+
+                do {
+
+                    int tl = (attributes[i])[idx].length();
+                    ta = (char*) ((attributes[i])[idx]).c_str();
+                    notFound = !(strcmp(ca, ta) == 0);
+                    idx++;
+                    //          fprintf(stderr, "i: %d n: %d\n\tc: %s l: %d\n\tt: %s l: %d\n ", i, n, ca, cl, ta, tl);
+                } while ((idx <= n) && notFound);
+                idx--;
+            }
             if (idx >= attrsNumVals[i]) {
                 fprintf(stderr, " not found: %s\n", ca);
                 exit(-1);
             } else {
                 currAttrState.push_back(idx);
                 //    fprintf(stderr, " idx: %d\n" , idx);
+                //    cin.get();
             }
         }
         result.push_back(currAttrState);
@@ -230,12 +261,12 @@ void FwEngine::readQueries(string fileName) {
         vector<string> token1;
         tokenize(line, token1, "\t");
 
-        if (token1.size() == 2) { // the corresponding count 
+        if (token1.size() == 2) { // the corresponding count
             int id = atoi(token1[0].c_str());
             line = token1[1];
             vector<string> tokens;
             tokenize(line, tokens);
-            // check that at least one word is present with freq, 
+            // check that at least one word is present with freq,
             if ((tokens.size() > 0) && (tokens.size() % 2 == 0)) {
                 vector<string> words;
                 vector<int> freq;
@@ -246,13 +277,13 @@ void FwEngine::readQueries(string fileName) {
                 State state = S_WORD;
                 for (int i = 0; i < (int) tokens.size(); i++) {
                     switch (state) {
-                        case S_WORD:
-                            words.push_back(tokens[i]);
-                            break;
-                        case S_FREQ:
-                            int cfreq = atoi(tokens[i].c_str());
-                            freq.push_back(cfreq);
-                            break;
+                    case S_WORD:
+                        words.push_back(tokens[i]);
+                        break;
+                    case S_FREQ:
+                        int cfreq = atoi(tokens[i].c_str());
+                        freq.push_back(cfreq);
+                        break;
                     }
                     state = (State) (1 - state);
                 }
@@ -276,8 +307,8 @@ void FwEngine::readQueries(string fileName) {
                     if (mIt == wordToQueryMp.end()) {
                         vector<Query*>* ptrQryVec = new vector<Query*>();
                         wordToQueryMp.insert(
-                                make_pair<string, vector<Query*>* >(words[i],
-                                ptrQryVec));
+                            make_pair<string, vector<Query*>* >(words[i],
+                                                                ptrQryVec));
                     }
                     mIt = wordToQueryMp.find(words[i]);
                     mIt->second->push_back(query);
@@ -296,7 +327,9 @@ void FwEngine::readQueries(string fileName) {
     }
     // NOTE: have a query corresponding to each instance
     assert(count == (int) instances->size1());
-    fprintf(stderr, "Total number of words: %d\n", (int) this->wordToQueryMp.size());
+    stringstream ssls("");
+    ssls<< "words: " <<  (int) this->wordToQueryMp.size();
+    SHOWFUNC(ssls.str().c_str());
     inFileStream.close();
     queryReadFlag = true;
 }
@@ -341,7 +374,7 @@ void FwEngine::makeChowLiuFactors(CLFactorType clType, double alpha) {
         // fprintf(stderr, "facetVars[%d] states: %d\n", pi1.second, (int) facetVars[pi1.second]->states());
         Factor* cFactor = new Factor(*cVarSet);
         map<Var, size_t> state;
-
+        double val10 =0;
         for (int i = 0; i < attrSizes[pi1.first]; i++) {
             for (int j = 0; j < attrSizes[pi1.second]; j++) {
                 state.clear();
@@ -350,44 +383,52 @@ void FwEngine::makeChowLiuFactors(CLFactorType clType, double alpha) {
                 size_t linState = calcLinearState(*cVarSet, state);
                 // fprintf(stderr, " linState: %d i: %d j: %d\n" , (int ) linState, i, j);
                 switch (clType) {
-                        // MLE approach
-                    case MLE:
-                        (*cFactor)[linState] = (*cProb)(i, j);
-                        break;
-                    case MAP:
-                        (*cFactor)[linState] = (0.5 * (*cProb)(i, j)
-                                + 0.5 / ((double) cVarSet->nrStates()));
-                        break;
-                    case OTHER:
-                        (*cFactor)[linState] = (alpha * (*cProb)(i, j)
-                                + (1 - alpha) / ((double) cVarSet->nrStates()));
-                        break;
+                    // MLE approach
+                case MLE:
+				    // HACK: Changing to get better saving 
+                    val10 = (double) (*cProb)(i, j); 
+				    cFactor->set(linState, val10); 
+				    //(*cFactor)[linState] =(double) (*cProb)(i, j);
+                    break;
+                case MAP:
+                    val10 = (double) (0.5 * (*cProb)(i, j) + 0.5 / ((double) cVarSet->nrStates()));
+                    cFactor->set(linState, val10); 
+                    break;
+                case OTHER:
+                    val10 = (double) (alpha * (*cProb)(i, j) + (1 - alpha) / ((double) cVarSet->nrStates()));
+                    cFactor->set(linState, val10); 
+                    break;
                 }
             }
         }
-        clFactors.push_back(cFactor);
-        //   cerr << *cFactor << endl << (*cProb) << endl << endl;
-
-
+        // FIXME: Not counting the edge factors
+	// HACK: To test C-L vs MF 
+	//if (!clFactorsFlag) {
+	    clFactors.push_back(cFactor);
+	    // cerr << *cFactor << endl << (*cProb) << endl << endl;
+       //}
     }
-
     /// Make the singleton factors;
     for (int i = 0; i < numAttrs; i++) {
         int cdegree = cl->s0[i];
-        if (cdegree != 1) { // introduce a singleton factor.
-            int idx = cl->getI(i, i);
+        // FIXME: Hack for testing singletons
+        if (cdegree != 1)
+        {   /// introduce a singleton factor.
+	  int idx = cl->getI(i, i);
             VarSet* cVarSet = new VarSet(*facetVars[i]);
             Factor* cFactor = new Factor(*cVarSet);
             Matrix<double>* cProb = cl->mutualCounts[idx];
             for (int si = 0; si < attrSizes[i]; si++) {
                 double p = (*cProb)(si, 0);
-                double v = ((p == 0.0) ? 0.0 : pow(p, 1.0 - cdegree));
-                (*cFactor)[si] = v;
+                // FIXME: Hack for singletons
+                // double v =  p;
+		
+                 double v =  ((p == 0.0) ? 0.0 : std::pow((double) p,(double) 1.0 - cdegree));
+                 cFactor->set(si, v);
             }
             cFactor->normalize();
-            //    cerr << *cFactor << endl << (*cProb) << endl << endl;
-
-
+	    //   cerr << *cFactor << endl << (*cProb) << endl << endl;
+            // FIXME: Hack to test singleton factor influence
             clFactors.push_back(cFactor);
         }
         // cerr<<attrNames[i]<<" degree: "<<cdegree<<"\n";
@@ -415,7 +456,6 @@ void FwEngine::makeQueryFactors(map<string, vector<Query*>* >* ptrWordQueryMp) {
 }
 
 void FwEngine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
-
     typedef vector<Query*>::const_iterator VqIter;
     map<string, vector<Factor*>* >::iterator sfvIter = wordFactors.find(word);
     if (sfvIter == wordFactors.end()) { // introduce a new factors
@@ -433,14 +473,13 @@ void FwEngine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
             }
             double cSum = (double) mystates;
 
-            
+
             bool wordInDB = false;
             bool wordInWN = true;
-            
+
             if (vq != NULL) { // handles the missing word in DB
                 for (VqIter vqIter = vq->begin(); vqIter != vq->end(); vqIter++) {
                     Query* cQuery = (*vqIter);
-
                     map<string, int>::iterator it = cQuery->words->find(word);
                     if (it == cQuery->words->end()) {
                         cerr << cQuery->getStr() << " " << word << "count: " << cQuery->count << endl;
@@ -474,7 +513,9 @@ void FwEngine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
                             stringstream ss("");
                             ss << "found " << wnMp->size() << " words for " << word << " max depth " << maxBfsDepth;
                             //SHOWFUNC(ss.str().c_str());
-
+                            // FIXME: Hack to  enable wn neighbour statistics
+			  
+			       // printf(" wn_neighbour: %d count: %d\n", csize11w1, aosx);  
                             FOREACH(itMp, (*wnMp)) {
                                 string cw = itMp->first;
                                 double cmult = itMp->second;
@@ -509,9 +550,10 @@ void FwEngine::makeFactorForWord(const string& word, const vector<Query*>* vq) {
                     double val = ((double) facetTotCounts[j]) * 1.0; // / ((double) cSum);
                     //    fprintf(stderr, "Assigning state %d P = %g\n", j, val );
                     if(cSum > 0.0)
-                        (*vFactor)[j] = val + 1e-6;
+                        
+                        vFactor->set(j, val + 1e-6);
                     else
-                        (*vFactor)[j] = 1.0;
+                        vFactor->set(j,  1.0);
                 }
                 cVec->push_back(vFactor);
             }
@@ -536,7 +578,7 @@ vector<size_t> FwEngine::solveForQuery(const vector<string>* words, const vector
     typedef map<string, vector<Factor* >* > WfMp;
     typedef WfMp::iterator WfMpIter;
 
-    // CLEAR THE PAST 
+    // CLEAR THE PAST
     if (sFactors == NULL) {
         sFactors = new vector<Factor > ();
     } else {
@@ -563,11 +605,12 @@ vector<size_t> FwEngine::solveForQuery(const vector<string>* words, const vector
 
     // start making the graph
 
+// HACK: TO TEST OUT Chow Liu pair-wise vs Mean Field  
     // get the Chow Liu factors;
-    if (!clFactorsFlag)
+    if (!clFactorsFlag) {
         /// FIXME: Hack to try out MAP ChowLiu Factors
-        this->makeChowLiuFactors(MLE);
-
+        this->makeChowLiuFactors(MAP);
+    }
     FOREACH(iter, this->clFactors) {
         Factor* ofPtr = (*iter);
         Factor newFactor(ofPtr->vars(), ofPtr->p());
@@ -601,6 +644,8 @@ vector<size_t> FwEngine::solveForQuery(const vector<string>* words, const vector
         FPRINTF(stderr, "solveForQuery() post Word-add factor size: %d\n", (int) sFactors->size());
         wi++;
     }
+    //time_t tb, tf;
+    //tb=time(NULL);
     sGraph = new FactorGraph(*sFactors);
     ofstream dotStream;
     dotStream.open("sample.dot");
@@ -612,9 +657,9 @@ vector<size_t> FwEngine::solveForQuery(const vector<string>* words, const vector
     size_t maxiter = 1000;
     Real tol = 1e-6;
     size_t verb = 0;
-    opts.Set("maxiter", maxiter);
-    opts.Set("tol", tol);
-    opts.Set("verbose", verb);
+    opts.set("maxiter", maxiter);
+    opts.set("tol", tol);
+    opts.set("verbose", verb);
     BP bpEngine(*sGraph, opts("updates", string("SEQFIX"))("inference", string("MAXPROD"))("logdomain", false));
     bpEngine.init();
     bpEngine.run();
@@ -627,11 +672,15 @@ vector<size_t> FwEngine::solveForQuery(const vector<string>* words, const vector
     //            cout<< bp2.belief(sGraph->var(i))<<endl;
     //        }
     solution->clear();
+    //tf = time(NULL);
+    //double timeForQuery = difftime(tf, tb);
+    // printf("time for online query: %.3f\n", timeForQuery);
+
     return bpEngine.findMaximum();
 }
 
 vector<vector<size_t> > FwEngine::getQueriesMAP(const vector<vector<string>* >& wordVec,
-        const vector<vector<int>* >& freqVec) {
+                                                const vector<vector<int>* >& freqVec) {
 
     typedef vector<vector<size_t> > VVSz;
     typedef vector<vector<string>* > VVpStr;
@@ -657,17 +706,18 @@ vector<vector<size_t> > FwEngine::getQueriesMAP(const vector<vector<string>* >& 
 /**
  * Writes out the results in selected directory for direct use in matlab
  */
-int FwEngine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples, string dirName) {
+int FwEngine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples, string dirName, vector<double>* accRes) {
     srand(time(NULL));
-    int expNum = rand() % 1000;
+    int expNum = rand() % 10000;
     int numT = samples.size();
     // result = 1 => correctly classified
     vector<int> result;
     // hamming distance between output/true
     vector<int> hamming;
-    stringstream dirCmd(""), qName(""), oName(""), tName(""), aName(""), hName("");
+    stringstream dirCmd(""), qName(""), oName(""), tName(""), aName(""), hName(""), wnName("");
     ofstream rqQuery, rqOut, rqTrue, rqAcc, rqHamming, rqStats;
-
+    ofstream wnStream;
+    
     dirCmd << "mkdir -p " << dirName << "/" << expNum;
     system(dirCmd.str().c_str());
     ifstream checker; // checks whether to write in header
@@ -687,7 +737,16 @@ int FwEngine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples,
     rqStats.open("runs.log", ios::app);
     qName << dirName << "/" << expNum << "/" << "query.txt";
     rqQuery.open(qName.str().c_str());
-
+    if(this->useWN) {
+	wnName<<dirName << "/" << expNum  << "/" << "wnNgbr.txt" ;
+	wnStream.open(wnName.str().c_str()) ;
+	FOREACH(iterWn, *(this->wnStats)) {
+            // printf("\twn_neighbours: %d  count: %d\n", iterWn->first, iterWn->second);
+	    wnStream << iterWn->first << " " << iterWn->second <<"\n";
+	    
+        }
+	wnStream.close(); 
+    }
     oName << dirName << "/" << expNum << "/" << "out.txt";
     rqOut.open(oName.str().c_str());
 
@@ -750,18 +809,22 @@ int FwEngine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples,
     double cAcc = ((double) overallCorrect) / ((double) numT) * 100.0;
     fprintf(stderr, "Accuracy: %g [", cAcc);
     rqStats << cAcc << " ";
-
+    if(accRes != NULL)
+        accRes->push_back(cAcc);
     rqStats << useWN << " ";
     for (int i1 = 0; i1 < numAttrs; i1++) {
         double cAcc1 = ((double) sumV[i1]) * 1.0 / ((double) numT)*100.0;
+        if(accRes != NULL)
+            accRes->push_back(cAcc1);
         rqStats << cAcc1 << " ";
         fprintf(stderr, " %g ", cAcc1);
     }
     fprintf(stderr, "] ");
     if(useWN) {
-        fprintf(stderr, "wn: %d of %d\n", (int) missingWN->size(), unseenWords); 
-    } else
-        fprintf(stderr, "\n");
+        fprintf(stderr, "\nwn: %d of %d\n", (int) missingWN->size(), unseenWords);
+    }
+    fprintf(stderr, "\n");
+
     rqStats << MAX_DEPTH << " ";
     rqStats << unseenWords << " ";
 
@@ -789,7 +852,6 @@ int FwEngine::writeRes(vector<vector<size_t> >& output, vector<Query*>& samples,
  *
  */
 int FwEngine::testSolver(double p, bool useWN, bool onlyCL, bool onlyWords, int num) {
-
     this->useWN = useWN;
     this->onlyCL = onlyCL;
     this->onlyWords = onlyWords;
@@ -799,7 +861,9 @@ int FwEngine::testSolver(double p, bool useWN, bool onlyCL, bool onlyWords, int 
     SHOWFUNC(ss.str().c_str());
     // TODO: Incomplete method for partial tr-tst of data
     srand(time(NULL));
-    init("data/classifieds.txt", "data/Matrix");
+    //  init("data/classifieds.txt", "data/Matrix");
+    /// XXX: Modification for new dataset
+    init("data/numeric.Classified4485", "data/Matrix4485");
     int N = queries.size();
     typedef vector<Query* > VQ;
     typedef vector<Query* >* VQP;
@@ -809,21 +873,23 @@ int FwEngine::testSolver(double p, bool useWN, bool onlyCL, bool onlyWords, int 
     VQP tstQ = prVqp.second;
     if(p == 1.0) {
         assert(num > 0);
-        tstQ = trQ; 
+        tstQ = trQ;
     }
     MSVpQp * trWordQueryMpPtr = train(trQ);
-    // SHOWFUNC("Finished training\n");
+    SHOWFUNC("Finished training\n");
+    time_t tb, tf;
+    tb = time(NULL);
     vector<vector<string> * > wv;
     vector<vector<int> *> fv;
     vector<vector<size_t> > output;
     int testCount = 0;
     int testSize = tstQ->size();
     Query* sample;
-    //    fprintf(stderr, "testSolver: num = %d\n", num);
+    // fprintf(stderr, "testSolver: num = %d\n", num);
     if (num == 0) {
         FOREACH(iterQ, *tstQ) {
             stringstream ss("");
-          //  ss << "test query " << testCount++ << " of " << testSize;
+            //  ss << "test query " << testCount++ << " of " << testSize;
             sample = (*iterQ);
             vector<string>* cw = new vector<string > (sample->getWords());
             if (cw->size() == 0) {
@@ -836,18 +902,25 @@ int FwEngine::testSolver(double p, bool useWN, bool onlyCL, bool onlyWords, int 
                 output.push_back(cres);
             }
         }
+        tf = time(NULL);
+        printf("Testing time for %d queries: %g\n", (int) tstQ->size(), difftime(tf, tb));
+        SHOWFUNC( " hi there\n");
+        FOREACH(iterWn, *(this->wnStats)) {
+            printf("\twn_neighbours: %d  count: %d\n", iterWn->first, iterWn->second);
+        }
+
         return writeRes(output, *tstQ, "result");
     } else {
         assert(num > 0);
         vector<Query*>* res11 = new vector<Query*>();
         int nTest = tstQ->size();
-        num = (int) min((int) nTest, num); 
+        num = (int) min((int) nTest, num);
         for (int i = 0; i < num; i++) {
             sample = (*tstQ)[rand()%nTest];
             stringstream ss("");
             ss << "test query " << testCount++ << " of " << testSize;
-          //  SHOWFUNC(ss.str().c_str());
-            
+            //  SHOWFUNC(ss.str().c_str());
+
             vector<string>* cw = new vector<string > (sample->getWords());
             if (cw->size() == 0) {
                 cerr << sample->id << "\n";
@@ -860,9 +933,12 @@ int FwEngine::testSolver(double p, bool useWN, bool onlyCL, bool onlyWords, int 
             }
             res11->push_back(sample);
         }
-        return writeRes(output, *res11, "result");
+        tf = time(NULL);
+        printf("Testing time for %d queries: %g\n", (int) tstQ->size(), difftime(tf, tb));
 
+	return writeRes(output, *res11, "result");
     }
+
 }
 
 Matrix<int>* FwEngine::getInstances(vector<Query* > * cqueries) {
@@ -892,8 +968,8 @@ map<string, vector<Query*>* >* FwEngine::getWordMpForQueries(vector<Query*>* trQ
             if (mIt == res->end()) {
                 vector<Query*>* ptrQryVec = new vector<Query*>();
                 res->insert(
-                        make_pair<string, vector<Query*>* >(words[i],
-                        ptrQryVec));
+                    make_pair<string, vector<Query*>* >(words[i],
+                                                        ptrQryVec));
                 FPRINTF(stderr, "adding %s for query %d\n", words[i].c_str(), (*iterQ)->id);
             }
             mIt = res->find(words[i]);

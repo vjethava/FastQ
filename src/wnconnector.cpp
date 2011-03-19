@@ -4,9 +4,9 @@
 // Description:
 // Author: Vinay Jethava
 // Created: Fri Apr 16 14:37:17 2010 (+0200)
-// Last-Updated: Fri Apr 16 15:51:56 2010 (+0200)
+// Last-Updated: Thu Jan 20 19:27:20 2011 (+0100)
 //           By: Vinay Jethava
-//     Update #: 18
+//     Update #: 19
 // URL:
 // Keywords:
 //
@@ -14,7 +14,7 @@
 // Code:
 #include "common.h"
 #include "wnconnector.h"
-#include <mysql/mysql.h>
+#include <mysql.h>
 using namespace std;
 
 const char* SERVER = "localhost";

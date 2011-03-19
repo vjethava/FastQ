@@ -86,7 +86,7 @@ public:
         }
         this->id = _id;
         this->engine = engine;
-        count = -1; 
+        count = -1;
     }
 
     vector<string> getWords() const {

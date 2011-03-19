@@ -4,9 +4,9 @@
  * Description: 
  * Author: Vinay Jethava
  * Created: Fri Apr 16 14:02:08 2010 (+0200)
- * Last-Updated: Fri Apr 16 15:41:35 2010 (+0200)
+ * Last-Updated: Thu Jan 20 19:27:31 2011 (+0100)
  *           By: Vinay Jethava
- *     Update #: 17
+ *     Update #: 19
  * URL: 
  * Keywords: 
  */
@@ -18,8 +18,8 @@
 #include "common.h"
 #include <iostream>
 #include <string>
-#include <wn.h>
-#include <mysql/mysql.h>
+// #include <wn.h>
+#include <mysql.h>
 using namespace std;
 // using namespace mysqlpp;
 

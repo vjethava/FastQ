@@ -18,16 +18,15 @@ This code incorporates (Euro) WordNet, thus exploiting the semantic relationship
 To compile, goto src/ and run make. The following paths need to be edited
 for correct compilation: 
  
-WN_ROOT=/usr/local/WordNet-3.0
+- WN_ROOT=/usr/local/WordNet-3.0
 
-DAI_ROOT=${HOME}/Code/libdai
+- DAI_ROOT=${HOME}/Code/libdai
 
 Optional - Only main.cpp uses matlab headers. Present iteration of the
 code has this commented out. 
 
-MATLAB_ROOT=/chalmers/sw/sup/matlab-2009b
+- MATLAB_ROOT=/chalmers/sw/sup/matlab-2009b
 
-TODO autoconf/automake
 
 ** Running on Linux
 

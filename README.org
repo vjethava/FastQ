@@ -1,7 +1,12 @@
 * FastQ
 
-Code for multi-facet intent classification of search queries using graphical models. 
-This code incorporates WordNet, thus exploiting the semantic relationships in the lexicon to improve the classification results.
+Code for fast scalable multi-facet intent classification of web search queries using dynamically constructed tree-structured graphical models. 
+This code incorporates (Euro) WordNet, thus exploiting the semantic relationships in the lexicon to improve the classification results.
+
+* Dependencies
+- WordNet (integrated into a MySQL) http://wordnet.princeton.edu/, http://www.illc.uva.nl/EuroWordNet/
+- libdai http://people.kyb.tuebingen.mpg.de/jorism/libDAI/
+- matlab (For plotting results. see mcode/ sub-directory)
 
 * Compilation
 

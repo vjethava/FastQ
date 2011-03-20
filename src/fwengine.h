@@ -90,10 +90,15 @@ public: // WORDNET INTEGRATION
     map<string, double>* wnMp;
     /// computes the wordnet relations - recursive
     int updateWnMp(int level, string word, bool update=true);
+
+ private:
+    vector<int> accuracy;
+    vector<int> hamming;
     
   public:
     int MAX_DEPTH;
-
+    int getModelName();
+    
   public:
     MSVpQp* train(vector<Query*> * trQ);
     inline int getQueryAttribute(Query* q, int attr) {

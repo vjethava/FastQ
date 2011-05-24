@@ -4,7 +4,9 @@ nbproject/*
 result/
 images/*.fig
 images/*.png
+images/*.eps
 *.log 
+*.csv
 cmp_*
 *.txt
 *.mk 
